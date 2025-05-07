@@ -1,0 +1,16 @@
+name: label-imgs
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  # CPU‑only build ───────────────────────────────────────────
+  - pytorch
+  - torchvision
+  # (If you have a CUDA GPU, replace the two lines above with
+  #   pytorch::pytorch pytorch::pytorch-cuda=11.8 torchvision
+  # and create the env on a CUDA‑capable machine.)
+  - timm
+  - pandas
+  - pillow
+  - tqdm
+  - pip
