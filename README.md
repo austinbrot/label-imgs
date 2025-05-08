@@ -8,7 +8,7 @@
 
 ```bash
 # clone the repo you created on GitHub
-git clone git@github.com:<user>/image-classifier.git
+git clone git@github.com:austinbrot/image-classifier.git
 cd image-classifier
 
 # create Conda environment (Python 3.11, CPU build of PyTorch)
@@ -54,10 +54,4 @@ The script prints progress and writes `predictions.csv` with three columns:
 * **Different models** – Just pass another `--model` name; the script will download its weights automatically on first use and resolve the correct preprocessing pipeline.
 * **CUDA** – Create the environment on a CUDA‑enabled host and replace the two PyTorch lines in `env.yml` with  
   `- pytorch::pytorch pytorch::pytorch-cuda=11.8 torchvision`.
-* **Non‑ImageNet models** – For models trained on other class sets, replace `get_imagenet_labels()` with your own label‑list loader.
-
----
-
-## License
-
-MIT © 2025 Your Name
+* **Non‑ImageNet models** – For models trained on other class sets, replace `get_imagenet_labels()` with your own label‑list loader
