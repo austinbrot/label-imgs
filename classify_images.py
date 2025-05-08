@@ -29,10 +29,11 @@ import json
 import urllib.request
 import tempfile
 
+from PIL import Image
+from torchvision.transforms.functional import to_tensor
+
 import torch
 from torch.utils.data import DataLoader, Dataset
-from torchvision.io import read_image  # reads many formats incl. TIF
-from torchvision.transforms.functional import convert_image_dtype
 import timm
 import timm.data
 import pandas as pd
@@ -56,10 +57,13 @@ def get_imagenet_labels() -> list[str]:
 
 
 class ImageFolderDataset(Dataset):
-    """A minimal dataset that returns (tensor, filename)."""
+    """
+    Returns (tensor, filename) for every image in `root`.
+    Uses Pillow to load .tif / .tiff / .png / .jpg etc.,
+    converts grayscale to RGB, then hands it to the timm transform.
+    """
 
     def __init__(self, root: Path, transform):
-        # Accept any common image extension
         self.paths = sorted(
             p
             for p in root.iterdir()
@@ -67,19 +71,21 @@ class ImageFolderDataset(Dataset):
         )
         self.transform = transform
 
-    def __len__(self) -> int:
+    def __len__(self):
         return len(self.paths)
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx):
         path = self.paths[idx]
-        img = read_image(str(path))  # shape: C×H×W, dtype uint8/16
-        # Some .tif files are grayscale → expand to 3 channels
-        if img.shape[0] == 1:
-            img = img.expand(3, *img.shape[1:])
-        # Convert to float in [0,1] because timm transforms expect float tensors
-        img = convert_image_dtype(img, dtype=torch.float32)
-        img = self.transform(img)
-        return img, path.name
+        img = Image.open(path)
+
+        # Ensure 3‑channel RGB no matter what
+        if img.mode not in ("RGB", "RGBA"):
+            img = img.convert("RGB")
+        elif img.mode == "RGBA":  # strip alpha channel
+            img = img.convert("RGB")
+
+        tensor = self.transform(img)  # timm’s pipeline → tensor
+        return tensor, path.name
 
 
 def load_model(name: str, device: torch.device):
