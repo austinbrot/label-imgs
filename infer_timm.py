@@ -6,9 +6,9 @@ Batch‑classify a folder of images with any pretrained model available in `timm
 and save the results to CSV.
 
 CSV columns:
-    image       – file name of the image
-    label       – human‑readable class name
-    label_idx   – integer index of the predicted class
+    image          – file name of the image
+    label_i        – human‑readable class name for the i-th prediction (i = 0…k-1)
+    probability_i  – probability of the i-th prediction
 
 Usage example
 -------------
@@ -106,6 +106,7 @@ def build_transform(model):
 def run(args):
     device = torch.device(args.device)
     model = load_model(args.model, device)
+    k = args.top_k
     transform = build_transform(model)
 
     dataset = ImageFolderDataset(args.images, transform)
@@ -118,9 +119,16 @@ def run(args):
         for batch, names in tqdm(loader, desc="Inferring", unit="batch"):
             batch = batch.to(device, non_blocking=True)
             logits = model(batch)
-            preds = torch.argmax(logits, dim=1).cpu().tolist()
-            for name, idx in zip(names, preds):
-                rows.append({"image": name, "label": labels[idx], "label_idx": idx})
+            probs = torch.softmax(logits, dim=1)
+            top_probs, top_idxs = torch.topk(probs, k=k, dim=1)
+            top_probs = top_probs.cpu().tolist()
+            top_idxs = top_idxs.cpu().tolist()
+            for name, idxs, probs in zip(names, top_idxs, top_probs):
+                row = {"image": name}
+                for i, (idx, prob) in enumerate(zip(idxs, probs)):
+                    row[f"label_{i}"] = labels[idx]
+                    row[f"probability_{i}"] = prob
+                rows.append(row)
 
     out_df = pd.DataFrame(rows)
     out_df.to_csv(args.out, index=False)
@@ -154,6 +162,12 @@ def parse_args():
         choices=["cpu", "cuda"],
         default="cpu",
         help="Inference device (default: %(default)s).",
+    )
+    p.add_argument(
+        "--top-k",
+        type=int,
+        default=1,
+        help="Number of top predictions to output (default: %(default)s).",
     )
     return p.parse_args()
 

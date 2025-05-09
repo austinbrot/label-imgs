@@ -1,6 +1,6 @@
 # Image‑Labeller
 
-> Batch‑classify a folder of images with any pretrained vision model shipped in **[timm](https://github.com/huggingface/pytorch-image-models)** and export the predictions to CSV.
+> Batch‑classify a folder of images with any pretrained vision model shipped in **[timm](https://github.com/huggingface/pytorch-image-models)** and export the top-k predictions to CSV.
 
 ---
 
@@ -20,20 +20,18 @@ Move or symlink your image folder into the repo (e.g. `data/500Stimuli/`).
 Then run:
 
 ```bash
-python classify_images.py \
+python infer_timm.py \
     --images data/500Stimuli \
     --model mobilenetv3_large_100 \
     --out predictions.csv \
-    --batch-size 32            # tune for your CPU / GPU \
+    --batch-size 32 \
+    --top-k 5
 ```
 
-The script prints progress and writes `predictions.csv` with three columns:
-
-| image | label | label_idx |
-|-------|-------|-----------|
-| 0001.tif | tabby, tabby_cat | 281 |
-| 0003.tif | Egyptian_cat | 285 |
-| … | … | … |
+The script prints progress and writes `predictions.csv` with the following columns (example for k=3):
+| image    | label_0         | probability_0 | label_1      | probability_1 | label_2        | probability_2 |
+|----------|-----------------|---------------|--------------|---------------|----------------|---------------|
+| 0001.tif | tabby, tabby_cat | 0.65         | tiger_cat    | 0.20          | Egyptian_cat   | 0.05          |
 
 ---
 
@@ -46,6 +44,7 @@ The script prints progress and writes `predictions.csv` with three columns:
 | `--out FILE` | — | CSV output path. Parent dirs are created automatically. |
 | `--batch-size N` | `32` | Increase for GPUs, lower for CPU boxes. |
 | `--device {cpu,cuda}` | `cpu` | Inference device. |
+| `--top-k N`      | `1`     | Number of top predictions to output. |
 
 ---
 
